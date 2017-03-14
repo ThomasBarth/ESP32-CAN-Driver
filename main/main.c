@@ -67,7 +67,7 @@ void task_CAN( void *pvParameters ){
         if(xQueueReceive(CAN_cfg.rx_queue,&__RX_frame, 3*portTICK_PERIOD_MS)==pdTRUE){
 
         	//do stuff!
-        	printf("New Frame form 0x%08x, DLC %d, dataL: 0x%08x, dataH: 0x%08x \r\n",__RX_frame.MsgID,  __RX_frame.DLC, __RX_frame.data.u32[0],__RX_frame.data.u32[1]);
+        	printf("New Frame form 0x%08x, DLC %d, dataL: 0x%08x, dataH: 0x%08x \r\n",__RX_frame.MSGID.B.ID,  __RX_frame.DLC, __RX_frame.data.u32[0],__RX_frame.data.u32[1]);
 
         	//loop back frame
         	CAN_write_frame(&__RX_frame);
