@@ -34,8 +34,16 @@
 
 /** \brief CAN Frame structure */
 typedef struct {
-    uint32_t 			MsgID;     		/**< \brief Message ID */
-    uint32_t 			DLC;			/**< \brief Length */
+	union{
+    uint32_t 			U;     		/**< \brief Message ID Word*/
+    struct {
+		unsigned int ID:29;				/**< \brief Message ID */
+		unsigned int reserved_1:1;
+		unsigned int RFR:1;				/**< \brief Flag Remote Frame = 1 */
+		unsigned int EXT:1;				/**< \brief Flag Extended = 1 or Standard = 0 */			
+		}B;
+	}MSGID;
+	uint32_t 			DLC;			/**< \brief Length */
     union {
         uint8_t u8[8];					/**< \brief Payload byte access*/
         uint32_t u32[2];				/**< \brief Payload u32 access*/

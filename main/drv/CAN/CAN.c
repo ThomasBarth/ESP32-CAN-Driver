@@ -87,24 +87,45 @@ static void CAN_read_frame(){
 	//frame read buffer
 	CAN_frame_t __frame;
 
-    //only handle standard frames, for extended format frames, FF is 0.
-    if(MODULE_CAN->MBX_CTRL.FCTRL.FIR.B.FF==1){
-        // Let the hardware know the frame has been read.
-        MODULE_CAN->CMR.B.RRB=1;
-    	return;
+	__frame.MSGID.U = 0;
+    
+    if(MODULE_CAN->MBX_CTRL.FCTRL.FIR.B.FF==1)
+	{
+		//Get Ext Message ID
+		__frame.MSGID.B.EXT = 1;     
+		__frame.MSGID.U |=  ((uint32_t)MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.EXT.ID[0] << 21);
+		__frame.MSGID.U |=  ((uint32_t)MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.EXT.ID[1] << 13);
+		__frame.MSGID.U |=  ((uint32_t)MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.EXT.ID[2] << 5);
+		__frame.MSGID.U |=  ((uint32_t)MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.EXT.ID[3] >> 3);
+		
+
+		//get DLC
+		__frame.DLC = MODULE_CAN->MBX_CTRL.FCTRL.FIR.B.DLC;
+
+		//deep copy data bytes
+		for(__byte_i=0;__byte_i<__frame.DLC;__byte_i++)
+			__frame.data.u8[__byte_i]=MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.EXT.data[__byte_i];
+
+			
     }
+	else
+	{
+		//Get STD Message ID
+		__frame.MSGID.B.EXT = 0;
+		__frame.MSGID.U |= ((uint32_t)MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.ID[0] << 3);
+		__frame.MSGID.U |= ((uint32_t)MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.ID[1] >> 5);
 
-    //Get Message ID
-    __frame.MsgID = (((uint32_t)MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.ID[0] << 3) | (MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.ID[1]>>5));
+		//get DLC
+		__frame.DLC = MODULE_CAN->MBX_CTRL.FCTRL.FIR.B.DLC;
 
-    //get DLC
-    __frame.DLC = MODULE_CAN->MBX_CTRL.FCTRL.FIR.B.DLC;
+		//deep copy data bytes
+		for(__byte_i=0;__byte_i<__frame.DLC;__byte_i++)
+			__frame.data.u8[__byte_i]=MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.data[__byte_i];
 
-    //deep copy data bytes
-    for(__byte_i=0;__byte_i<__frame.DLC;__byte_i++)
-    	__frame.data.u8[__byte_i]=MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.data[__byte_i];
-
-    // Let the hardware know the frame has been read.
+		
+	}
+	__frame.MSGID.B.RFR = MODULE_CAN->MBX_CTRL.FCTRL.FIR.B.RTR;
+	// Let the hardware know the frame has been read.
     MODULE_CAN->CMR.B.RRB=1;
 
     //send frame to input queue
@@ -117,20 +138,31 @@ int CAN_write_frame(const CAN_frame_t* p_frame){
 	//byte iterator
 	uint8_t __byte_i;
 
-	//set frame format to standard and no RTR (needs to be done in a single write)
-	MODULE_CAN->MBX_CTRL.FCTRL.FIR.U=p_frame->DLC;
-
-	//Write message ID
-	MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.ID[0] = ((p_frame->MsgID) >> 3);
-	MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.ID[1] = ((p_frame->MsgID) << 5);
-
-    // Copy the frame data to the hardware
-    for(__byte_i=0;__byte_i<p_frame->DLC;__byte_i++)
+	//set frame format to standard/ext and no RTR (needs to be done in a single write)
+	MODULE_CAN->MBX_CTRL.FCTRL.FIR.U = ((p_frame->MSGID.B.EXT << 7)| (p_frame->MSGID.B.RFR << 6) | (p_frame->DLC));
+	
+	if(p_frame->MSGID.B.EXT) 
+	{
+		//Write Ext message ID
+		MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.EXT.ID[0] = (p_frame->MSGID.U & 0x1FE00000) >> 21 ;
+		MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.EXT.ID[1] = (p_frame->MSGID.U & 0x001FE000) >> 13 ;
+		MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.EXT.ID[2] = (p_frame->MSGID.U & 0x00001FE0) >> 5  ;
+		MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.EXT.ID[3] = (p_frame->MSGID.U & 0x0000001F) << 3  ;
+		// Copy the frame data to the hardware
+		for(__byte_i=0;__byte_i<p_frame->DLC;__byte_i++)
+    	MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.EXT.data[__byte_i]=p_frame->data.u8[__byte_i];
+	}
+	else
+	{
+		//Write Std message ID
+		MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.ID[0] = (p_frame->MSGID.U >> 3) ;
+		MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.ID[1] = (p_frame->MSGID.U << 5) ;
+	    // Copy the frame data to the hardware
+		for(__byte_i=0;__byte_i<p_frame->DLC;__byte_i++)
     	MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.data[__byte_i]=p_frame->data.u8[__byte_i];
-
+	}
     // Transmit frame
     MODULE_CAN->CMR.B.TR=1;
-
     return 0;
 }
 
