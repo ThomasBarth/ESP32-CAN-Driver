@@ -8,7 +8,7 @@
  ---A basic CAN driver for the Espressif ESP32 by [Thomas Barth](http://barth-dev.de)
  
  --		Change Log from 22 March 2017
- --- 		version 0.1_third_parts by esp32de [rudi ;-)](http://esp32.de)
+ --- 		version 0.1_third_parts by [rudi ;-)](http://esp32.de)
  *  		- modified for esp-idf
  *  		- modified for component driver mode
  *			- menuconfig file created
