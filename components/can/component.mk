@@ -10,7 +10,3 @@
 # COMPONENT_ADD_INCLUDEDIRS 	:= / drv/CAN/include
 # COMPONENT_SRCDIRS			:= / drv/CAN drv/CAN/cfg
 
-# neu - zumindest dann leer
-
-# COMPONENT_ADD_INCLUDEDIRS 	:= / 
-# COMPONENT_SRCDIRS			:= / 
