@@ -83,6 +83,16 @@ config CAN_SPEED_USER_KBPS
     help
         Select this: CAN Node runs at USER kBits.
 
+config CAN_SPEED_USER_KBPS_VAL
+    int "USER CAN Speed in kBit/s"
+    default 125
+    range 50 1000
+    depends on CAN_SPEED_USER_KBPS
+    help
+        You can set your USER CAN Speed by input int 
+		Range 50 ... 1000 kBit/s
+		Be sure your Speed is supported by your HW / BUS
+		
 endchoice
 
 choice ESP_CAN_TEST_SENDING
