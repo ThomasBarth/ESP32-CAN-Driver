@@ -7,5 +7,10 @@
 # please read the ESP-IDF documents if you need to do this.
 #
 
-COMPONENT_ADD_INCLUDEDIRS 	:= / drv/CAN/include
-COMPONENT_SRCDIRS			:= / drv/CAN drv/CAN/cfg
+# COMPONENT_ADD_INCLUDEDIRS 	:= / drv/CAN/include
+# COMPONENT_SRCDIRS			:= / drv/CAN drv/CAN/cfg
+
+# neu - zumindest dann leer
+
+# COMPONENT_ADD_INCLUDEDIRS 	:= / 
+# COMPONENT_SRCDIRS			:= / 
