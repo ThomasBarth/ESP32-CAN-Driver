@@ -4,11 +4,11 @@
   - Base CAN Driver [forked from Thomas Barth](https://github.com/ThomasBarth/ESP32-CAN-Driver)
   - General [Component CAN Driver Pack](https://github.com/ESP32DE/ESP32-CAN-Driver/tree/Component_CAN_Driver_Pack) Work for ESP-IDF with menuconfig from [rudi ;-)](http://esp32.de)
 
- * version 0.1
- * A basic CAN driver for the Espressif ESP32 by [Thomas Barth](http://barth-dev.de)
- *
- *		Change Log from 22 March 2017
- * 		version 0.1_third_parts by esp32de [rudi ;-)](http://esp32.de)
+ --version 0.1
+ ---A basic CAN driver for the Espressif ESP32 by [Thomas Barth](http://barth-dev.de)
+ 
+ --		Change Log from 22 March 2017
+ --- 		version 0.1_third_parts by esp32de [rudi ;-)](http://esp32.de)
  *  		- modified for esp-idf
  *  		- modified for component driver mode
  *			- menuconfig file created
