@@ -37,8 +37,8 @@ Change Log from 22 March 2017
  				node id ( CAN identifier )
  					- CONFIG_ESP_CAN_NODE_ITSELF
  				enbable/disable send test frames
- 					- CAN_TEST_SENDING_ENABLED
- 					- CAN_TEST_SENDING_DISABLED 
+ 					- CONFIG_CAN_TEST_SENDING_ENABLED
+ 					- CONFIG_CAN_TEST_SENDING_DISABLED 
 
 
     
