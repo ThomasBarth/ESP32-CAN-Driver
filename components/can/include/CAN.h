@@ -32,8 +32,18 @@
 #include <stdint.h>
 #include "CAN_config.h"
 
+/**
+ * \brief CAN frame type (standard/extended)
+ */
+typedef enum {
+	CAN_frame_std=0, 					/**< Standard frame, using 11 bit identifer. */
+	CAN_frame_ext=1 					/**< Extended frame, using 29 bit identifer. */
+}CAN_frame_format_t;
+
+
 /** \brief CAN Frame structure */
 typedef struct {
+	CAN_frame_format_t	format;			/**< \brief CAN frame type, standard (11bit) or extended (29bit) identifier, see #CAN_frame_t */
     uint32_t 			MsgID;     		/**< \brief Message ID */
     uint32_t 			DLC;			/**< \brief Length */
     union {

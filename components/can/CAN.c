@@ -48,23 +48,20 @@ static void CAN_isr(void *arg_p);
 
 static void CAN_isr(void *arg_p){
 
-    uint8_t interrupt;
+	//Interrupt flag buffer
+	__CAN_IRQ_t interrupt;
 
-    // Read interrupt status and clears flags
+    // Read interrupt status and clear flags
     interrupt = MODULE_CAN->IR.U;
 
     // Handle TX complete interrupt
     if ((interrupt & __CAN_IRQ_TX) != 0) {
-
+    	/*handler*/
     }
 
     // Handle RX frame available interrupt
-    if ((interrupt & __CAN_IRQ_RX) != 0) {
-        if (CAN_cfg.rx_queue == NULL)
-            return;
-
+    if ((interrupt & __CAN_IRQ_RX) != 0)
     	CAN_read_frame();
-    }
 
     // Handle error interrupts.
     if ((interrupt & (__CAN_IRQ_ERR						//0x4
@@ -74,10 +71,9 @@ static void CAN_isr(void *arg_p){
                       | __CAN_IRQ_ARB_LOST				//0x40
                       | __CAN_IRQ_BUS_ERR				//0x80
 	)) != 0) {
-
+    	/*handler*/
     }
 }
-
 
 static void CAN_read_frame(){
 
@@ -87,46 +83,93 @@ static void CAN_read_frame(){
 	//frame read buffer
 	CAN_frame_t __frame;
 
-    //only handle standard frames, for extended format frames, FF is 0.
-    if(MODULE_CAN->MBX_CTRL.FCTRL.FIR.B.FF==1){
+    //check if we have a queue. If not, operation is aborted.
+    if (CAN_cfg.rx_queue == NULL){
         // Let the hardware know the frame has been read.
         MODULE_CAN->CMR.B.RRB=1;
-    	return;
+        return;
     }
 
-    //Get Message ID
-    __frame.MsgID = (((uint32_t)MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.ID[0] << 3) | (MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.ID[1]>>5));
+    //check if this is a standard or extended CAN frame
+    //standard frame
+    if(MODULE_CAN->MBX_CTRL.FCTRL.FIR.B.FF==CAN_frame_std){
+
+    	//set type
+    	__frame.format=CAN_frame_std;
+
+        //Get Message ID
+        __frame.MsgID = _CAN_GET_STD_ID;
+
+        //deep copy data bytes
+        for(__byte_i=0;__byte_i<__frame.DLC;__byte_i++)
+        	__frame.data.u8[__byte_i]=MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.data[__byte_i];
+
+    }
+    //extended frame
+    else{
+
+    	//set type
+    	__frame.format=CAN_frame_ext;
+
+        //Get Message ID
+        __frame.MsgID = _CAN_GET_EXT_ID;
+
+        //deep copy data bytes
+        for(__byte_i=0;__byte_i<__frame.DLC;__byte_i++)
+        	__frame.data.u8[__byte_i]=MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.EXT.data[__byte_i];
+
+    }
 
     //get DLC
     __frame.DLC = MODULE_CAN->MBX_CTRL.FCTRL.FIR.B.DLC;
 
-    //deep copy data bytes
-    for(__byte_i=0;__byte_i<__frame.DLC;__byte_i++)
-    	__frame.data.u8[__byte_i]=MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.data[__byte_i];
-
-    // Let the hardware know the frame has been read.
-    MODULE_CAN->CMR.B.RRB=1;
-
     //send frame to input queue
     xQueueSendFromISR(CAN_cfg.rx_queue,&__frame,0);
-}
 
+    //Let the hardware know the frame has been read.
+    MODULE_CAN->CMR.B.RRB=1;
+}
 
 int CAN_write_frame(const CAN_frame_t* p_frame){
 
 	//byte iterator
 	uint8_t __byte_i;
 
-	//set frame format to standard and no RTR (needs to be done in a single write)
-	MODULE_CAN->MBX_CTRL.FCTRL.FIR.U=p_frame->DLC;
+	//Frame information record buffer, because FIR needs to be written in a single write.
+	CAN_FIR_t	__FIR_buf;
+	__FIR_buf.U=0;
 
-	//Write message ID
-	MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.ID[0] = ((p_frame->MsgID) >> 3);
-	MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.ID[1] = ((p_frame->MsgID) << 5);
+	//set DLC
+	__FIR_buf.B.DLC=p_frame->DLC;
 
-    // Copy the frame data to the hardware
-    for(__byte_i=0;__byte_i<p_frame->DLC;__byte_i++)
-    	MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.data[__byte_i]=p_frame->data.u8[__byte_i];
+	//set frame format
+	__FIR_buf.B.FF=p_frame->format;
+
+	//copy frame information record
+	MODULE_CAN->MBX_CTRL.FCTRL.FIR.U=__FIR_buf.U;
+
+	//standard frame
+	if(p_frame->format==CAN_frame_std){
+
+		//Write message ID
+		_CAN_SET_STD_ID(p_frame->MsgID);
+
+	    // Copy the frame data to the hardware
+	    for(__byte_i=0;__byte_i<p_frame->DLC;__byte_i++)
+	    	MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.data[__byte_i]=p_frame->data.u8[__byte_i];
+
+	}
+	//extended frame
+	else{
+
+		//Write message ID
+		_CAN_SET_EXT_ID(p_frame->MsgID);
+
+	    // Copy the frame data to the hardware
+	    for(__byte_i=0;__byte_i<p_frame->DLC;__byte_i++)
+	    	MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.EXT.data[__byte_i]=p_frame->data.u8[__byte_i];
+
+	}
 
     // Transmit frame
     MODULE_CAN->CMR.B.TR=1;
@@ -134,15 +177,10 @@ int CAN_write_frame(const CAN_frame_t* p_frame){
     return 0;
 }
 
-
-
 int CAN_init(){
 
 	//Time quantum
-	double __tq = 0;
-
-	//Bit timing
-	float __bt = 1000/CAN_cfg.speed;
+	double __tq;
 
     //enable module
     SET_PERI_REG_MASK(DPORT_PERIP_CLK_EN_REG, DPORT_CAN_CLK_EN);
@@ -180,7 +218,7 @@ int CAN_init(){
 			break;
 		default:
 			MODULE_CAN->BTR1.B.TSEG1	=0xc;
-			__tq = __bt / 16;
+			__tq = ((float)1000/CAN_cfg.speed) / 16;
 	}
 
 	//set baud rate prescaler
