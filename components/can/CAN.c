@@ -90,38 +90,32 @@ static void CAN_read_frame(){
         return;
     }
 
+	//get FIR
+	__frame.FIR.U=MODULE_CAN->MBX_CTRL.FCTRL.FIR.U;
+
     //check if this is a standard or extended CAN frame
     //standard frame
-    if(MODULE_CAN->MBX_CTRL.FCTRL.FIR.B.FF==CAN_frame_std){
-
-    	//set type
-    	__frame.format=CAN_frame_std;
+    if(__frame.FIR.B.FF==CAN_frame_std){
 
         //Get Message ID
         __frame.MsgID = _CAN_GET_STD_ID;
 
         //deep copy data bytes
-        for(__byte_i=0;__byte_i<__frame.DLC;__byte_i++)
+        for(__byte_i=0;__byte_i<__frame.FIR.B.DLC;__byte_i++)
         	__frame.data.u8[__byte_i]=MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.data[__byte_i];
 
     }
     //extended frame
     else{
 
-    	//set type
-    	__frame.format=CAN_frame_ext;
-
         //Get Message ID
         __frame.MsgID = _CAN_GET_EXT_ID;
 
         //deep copy data bytes
-        for(__byte_i=0;__byte_i<__frame.DLC;__byte_i++)
+        for(__byte_i=0;__byte_i<__frame.FIR.B.DLC;__byte_i++)
         	__frame.data.u8[__byte_i]=MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.EXT.data[__byte_i];
 
     }
-
-    //get DLC
-    __frame.DLC = MODULE_CAN->MBX_CTRL.FCTRL.FIR.B.DLC;
 
     //send frame to input queue
     xQueueSendFromISR(CAN_cfg.rx_queue,&__frame,0);
@@ -135,27 +129,17 @@ int CAN_write_frame(const CAN_frame_t* p_frame){
 	//byte iterator
 	uint8_t __byte_i;
 
-	//Frame information record buffer, because FIR needs to be written in a single write.
-	CAN_FIR_t	__FIR_buf;
-	__FIR_buf.U=0;
-
-	//set DLC
-	__FIR_buf.B.DLC=p_frame->DLC;
-
-	//set frame format
-	__FIR_buf.B.FF=p_frame->format;
-
 	//copy frame information record
-	MODULE_CAN->MBX_CTRL.FCTRL.FIR.U=__FIR_buf.U;
+	MODULE_CAN->MBX_CTRL.FCTRL.FIR.U=p_frame->FIR.U;
 
 	//standard frame
-	if(p_frame->format==CAN_frame_std){
+	if(p_frame->FIR.B.FF==CAN_frame_std){
 
 		//Write message ID
 		_CAN_SET_STD_ID(p_frame->MsgID);
 
 	    // Copy the frame data to the hardware
-	    for(__byte_i=0;__byte_i<p_frame->DLC;__byte_i++)
+	    for(__byte_i=0;__byte_i<p_frame->FIR.B.DLC;__byte_i++)
 	    	MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.STD.data[__byte_i]=p_frame->data.u8[__byte_i];
 
 	}
@@ -166,7 +150,7 @@ int CAN_write_frame(const CAN_frame_t* p_frame){
 		_CAN_SET_EXT_ID(p_frame->MsgID);
 
 	    // Copy the frame data to the hardware
-	    for(__byte_i=0;__byte_i<p_frame->DLC;__byte_i++)
+	    for(__byte_i=0;__byte_i<p_frame->FIR.B.DLC;__byte_i++)
 	    	MODULE_CAN->MBX_CTRL.FCTRL.TX_RX.EXT.data[__byte_i]=p_frame->data.u8[__byte_i];
 
 	}
@@ -264,6 +248,7 @@ int CAN_init(){
 
 int CAN_stop(){
 
+	//enter reset mode
 	MODULE_CAN->MOD.B.RM = 1;
 
 	return 0;

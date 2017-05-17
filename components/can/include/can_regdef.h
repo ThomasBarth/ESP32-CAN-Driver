@@ -29,6 +29,8 @@
 #ifndef __DRIVERS_CAN_REGDEF_H_
 #define __DRIVERS_CAN_REGDEF_H_
 
+#include "CAN.h"	//CAN_FIR_t
+
 /** \brief Start address of CAN registers */
 #define MODULE_CAN              					((volatile CAN_Module_t    *)0x3ff6b000)
 
@@ -73,16 +75,6 @@ typedef enum  {
 	__CAN_OC_COM=			0b11,					/**< \brief clock output mode */
 }__CAN_OCMODE_t;
 
-/** \brief Frame information record type */
-typedef union{uint32_t U;							/**< \brief Unsigned access */
-	 struct {
-		unsigned int DLC:4;             			/**< \brief [3:0] DLC, Data length container */
-		unsigned int unknown_2:2;       			/**< \brief \internal unknown */
-		unsigned int RTR:1;             			/**< \brief [6:6] RTR, Remote Transmission Request */
-		unsigned int FF:1;              			/**< \brief [7:7] Frame Format */
-		unsigned int reserved_24:24;    			/**< \brief \internal Reserved */
-	} B;
-} CAN_FIR_t;
 
 /**
  * CAN controller (SJA1000).
