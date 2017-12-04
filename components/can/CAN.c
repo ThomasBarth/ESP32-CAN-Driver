@@ -171,6 +171,7 @@ int CAN_init(){
     DPORT_CLEAR_PERI_REG_MASK(DPORT_PERIP_RST_EN_REG, DPORT_CAN_RST);
 
     //configure TX pin
+    gpio_set_level(CAN_cfg.tx_pin_id, 1);
     gpio_set_direction(CAN_cfg.tx_pin_id,GPIO_MODE_OUTPUT);
     gpio_matrix_out(CAN_cfg.tx_pin_id,CAN_TX_IDX,0,0);
     gpio_pad_select_gpio(CAN_cfg.tx_pin_id);
