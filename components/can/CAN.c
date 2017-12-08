@@ -48,7 +48,7 @@ static void CAN_isr(void *arg_p);
 
 static void CAN_isr(void *arg_p){
 
-bool fYieldRequiered = false;
+BaseType_t fYieldRequired = false;
 	//Interrupt flag buffer
 	__CAN_IRQ_t interrupt;
 
@@ -67,7 +67,7 @@ bool fYieldRequiered = false;
     // Handle error interrupts.
     if ((interrupt & (__CAN_IRQ_ERR						//0x4
                       | __CAN_IRQ_DATA_OVERRUN			//0x8
-                      | __CAN_IRQ_WAKEUP				//0x10
+;                      | __CAN_IRQ_WAKEUP				//0x10
                       | __CAN_IRQ_ERR_PASSIVE			//0x20
                       | __CAN_IRQ_ARB_LOST				//0x40
                       | __CAN_IRQ_BUS_ERR				//0x80
@@ -82,6 +82,7 @@ static bool CAN_read_frame(){
 
 	//byte iterator
 	uint8_t __byte_i;
+	bool fYieldRequired;
 
 	//frame read buffer
 	CAN_frame_t __frame;
@@ -121,7 +122,7 @@ static bool CAN_read_frame(){
     }
 
     //send frame to input queue
-    bool fYieldRequired = xQueueSendFromISR(CAN_cfg.rx_queue,&__frame,0);
+    xQueueSendFromISR(CAN_cfg.rx_queue,&__frame, &fYieldRequired);
 
     //Let the hardware know the frame has been read.
     MODULE_CAN->CMR.B.RRB=1;
