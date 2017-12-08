@@ -42,13 +42,13 @@
 #include "CAN_config.h"
 
 
-static void CAN_read_frame();
+static BaseType_t CAN_read_frame();
 static void CAN_isr(void *arg_p);
 
 
 static void CAN_isr(void *arg_p){
 
-BaseType_t fYieldRequired = false;
+BaseType_t fYieldRequired = pdFALSE;
 	//Interrupt flag buffer
 	__CAN_IRQ_t interrupt;
 
@@ -67,7 +67,7 @@ BaseType_t fYieldRequired = false;
     // Handle error interrupts.
     if ((interrupt & (__CAN_IRQ_ERR						//0x4
                       | __CAN_IRQ_DATA_OVERRUN			//0x8
-;                      | __CAN_IRQ_WAKEUP				//0x10
+                      | __CAN_IRQ_WAKEUP				//0x10
                       | __CAN_IRQ_ERR_PASSIVE			//0x20
                       | __CAN_IRQ_ARB_LOST				//0x40
                       | __CAN_IRQ_BUS_ERR				//0x80
@@ -78,11 +78,11 @@ BaseType_t fYieldRequired = false;
 		  portYIELD_FROM_ISR();
 }
 
-static bool CAN_read_frame(){
+static BaseType_t CAN_read_frame(){
 
 	//byte iterator
 	uint8_t __byte_i;
-	bool fYieldRequired;
+	BaseType_t fYieldRequired;
 
 	//frame read buffer
 	CAN_frame_t __frame;
