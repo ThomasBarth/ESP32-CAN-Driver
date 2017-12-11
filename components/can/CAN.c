@@ -42,7 +42,7 @@
 #include "CAN_config.h"
 
 
-static BaseType_t CAN_read_frame();
+static void CAN_read_frame(BaseType_t* pfYieldRequired);
 static void CAN_isr(void *arg_p);
 
 
@@ -62,7 +62,7 @@ BaseType_t fYieldRequired = pdFALSE;
 
     // Handle RX frame available interrupt
     if ((interrupt & __CAN_IRQ_RX) != 0)
-    	fYieldRequired = CAN_read_frame();
+    	CAN_read_frame(&fYieldRequired);
 
     // Handle error interrupts.
     if ((interrupt & (__CAN_IRQ_ERR						//0x4
@@ -78,11 +78,10 @@ BaseType_t fYieldRequired = pdFALSE;
 		  portYIELD_FROM_ISR();
 }
 
-static BaseType_t CAN_read_frame(){
+static void CAN_read_frame(BaseType_t* pfYieldRequired){
 
 	//byte iterator
 	uint8_t __byte_i;
-	BaseType_t fYieldRequired;
 
 	//frame read buffer
 	CAN_frame_t __frame;
@@ -122,12 +121,10 @@ static BaseType_t CAN_read_frame(){
     }
 
     //send frame to input queue
-    xQueueSendFromISR(CAN_cfg.rx_queue,&__frame, &fYieldRequired);
+    xQueueSendFromISR(CAN_cfg.rx_queue,&__frame, pfYieldRequired);
 
     //Let the hardware know the frame has been read.
     MODULE_CAN->CMR.B.RRB=1;
-	
-	return fYieldRequired;
 }
 
 int CAN_write_frame(const CAN_frame_t* p_frame){
