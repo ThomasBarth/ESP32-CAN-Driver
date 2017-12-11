@@ -90,7 +90,8 @@ static void CAN_read_frame(BaseType_t* pfYieldRequired){
     if (CAN_cfg.rx_queue == NULL){
         // Let the hardware know the frame has been read.
         MODULE_CAN->CMR.B.RRB=1;
-        return false;
+	*pfYieldRequired = pdFALSE;
+        return;
     }
 
 	//get FIR
