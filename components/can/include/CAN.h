@@ -32,6 +32,10 @@
 #include <stdint.h>
 #include "CAN_config.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+	
 /**
  * \brief CAN frame type (standard/extended)
  */
@@ -93,4 +97,8 @@ int CAN_write_frame(const CAN_frame_t* p_frame);
  */
 int CAN_stop(void);
 
+#ifdef __cplusplus
+}
+#endif
+	
 #endif
